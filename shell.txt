@@ -1,0 +1,112 @@
+#python manage.py shell
+
+# 0. Импорт нужного для дальнейших заданий
+from news.models import Author, Category, Post, PostCategory, Comment, type_arti, type_news
+from django.contrib.auth.models import User
+
+
+# 1. Создать двух пользователей (с помощью метода User.objects.create_user('username')).
+user1 = User.objects.create_user('ivan')
+user2 = User.objects.create_user('petr')
+
+
+# 2. Создать два объекта модели Author, связанные с пользователями.
+author1 = Author.objects.create(user=user1)
+author2 = Author.objects.create(user=user2)
+
+
+# 3. Добавить 4 категории в модель Category.
+c1 = Category.objects.create(name='Новости')
+c2 = Category.objects.create(name='Спорт')
+c3 = Category.objects.create(name='Наука')
+c4 = Category.objects.create(name='Культура')
+
+
+# 4. Добавить 2 статьи и 1 новость.
+post1 = Post.objects.create(
+    author=author1,
+    type_of_post=type_arti,
+    title='Python и Django: основы',
+    text='В этой статье мы рассмотрим базовые принципы работы фреймворка Django, '
+         'архитектуру MVT, настройки проекта, модели, представления и шаблонизатор. '
+         'Также разберём работу с миграциями и ORM.'
+)
+
+post2 = Post.objects.create(
+    author=author2,
+    type_of_post=type_arti,
+    title='История Москвы',
+    text='Рассказ о том, как развивалась Москва от первого упоминания в 1147 году '
+         'до современности: Кремль, Красная площадь и ключевые события.'
+)
+
+news1 = Post.objects.create(
+    author=author1,
+    type_of_post=type_news,
+    title='Выпуск 44: итоги недели',
+    text='Сводка главных событий прошлой недели в мире технологий и культуры. '
+         'Обновления фреймворков, новые релизы и интересные проекты.'
+)
+
+
+# 5. Присвоить им категории (как минимум в одной статье/новости должно быть не меньше 2 категорий).
+post1.category.add(c1, c3)   # «Новости» + «Наука» — 2 категории
+post2.category.add(c2)       # «Спорт» — 1 категория
+news1.category.add(c1, c4)   # «Новости» + «Культура» — 2 категории
+
+
+# 6. Создать как минимум 4 комментария к разным объектам модели Post (в каждом объекте должен быть как минимум один комментарий).
+comment1 = Comment.objects.create(
+    post=post1, user=user2, text='Интересная статья, спасибо!'
+)
+comment2 = Comment.objects.create(
+    post=post2, user=user1, text='Хороший обзор истории.'
+)
+comment3 = Comment.objects.create(
+    post=news1, user=user2, text='Полезный выпуск новостей.'
+)
+comment4 = Comment.objects.create(
+    post=news1, user=user1, text='Добавьте больше деталей в следующий раз.'
+)
+
+
+# 7. Применяя функции like() и dislike() к статьям/новостям и комментариям, скорректировать рейтинги этих объектов.
+# Рейтинги статей/новости
+post1.like(); post1.like()          # рейтинг post1 = 2
+post2.dislike(); post2.like()       # рейтинг post2 = 0
+news1.like()                        # рейтинг news1 = 1
+
+# Рейтинги комментариев
+comment1.like()                     # rating = 1
+comment2.dislike()                  # rating = -1
+comment3.like()                     # rating = 1
+comment4.like(); comment4.dislike() # rating = 0
+
+
+# 8. Обновить рейтинги пользователей.
+author1.update_rating()
+author2.update_rating()
+
+
+# 9. Вывести username и рейтинг лучшего пользователя (применяя сортировку и возвращая поля первого объекта).
+best_author = Author.objects.order_by('-rating').first()
+print('Лучший пользователь:', best_author.user.username, '| Рейтинг:', best_author.rating)
+
+
+# 10. Вывести дату добавления, username автора, рейтинг, заголовок и превью лучшей статьи, основываясь на лайках/дислайках к этой статье.
+best_post = Post.objects.order_by('-rating').first()
+print('Дата добавления:', best_post.time_posted)
+print('Username автора:', best_post.author.user.username)
+print('Рейтинг:', best_post.rating)
+print('Заголовок:', best_post.title)
+print('Превью:', best_post.preview())
+
+
+# 11. Вывести все комментарии (дата, пользователь, рейтинг, текст) к этой статье.
+for c in Comment.objects.filter(post=best_post):
+    print('Дата:', c.time_posted)
+    print('Пользователь:', c.user.username)
+    print('Рейтинг:', c.rating)
+    print('Текст:', c.text)
+    print('-' * 40)
+
